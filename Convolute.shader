@@ -1,3 +1,9 @@
+/*******************************************************
+ * 项目来源: 开源项目 [Vaporwave](https://github.com/itorr/vaporwave?tab=readme-ov-file)
+ * 
+ * Project Source: Open-source project [Vaporwave](https://github.com/itorr/vaporwave?tab=readme-ov-file)
+ *******************************************************/
+
 Shader"Vaporwave/Convolute"
 {
     Properties

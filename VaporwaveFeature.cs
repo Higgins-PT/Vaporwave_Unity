@@ -5,6 +5,11 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+/*******************************************************
+ * 项目来源: 开源项目 [Vaporwave](https://github.com/itorr/vaporwave?tab=readme-ov-file)
+ * 
+ * Project Source: Open-source project [Vaporwave](https://github.com/itorr/vaporwave?tab=readme-ov-file)
+ *******************************************************/
 
 public class VaporwaveFeature : ScriptableRendererFeature
 {
