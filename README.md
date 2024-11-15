@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/1f3d426f-8ba4-40aa-82e5-1a25695d8887)![image](https://github.com/user-attachments/assets/7f8ff135-5425-47b3-a651-20d244e61cdc)# 项目简介
+# 项目简介
 
 本项目基于开源项目 [Vaporwave](https://github.com/itorr/vaporwave?tab=readme-ov-file) 移植到 Unity，并进行了适配与优化，使其能够在 Unity 中使用。
 
@@ -17,3 +17,4 @@
 https://github.com/Higgins-PT/Vaporwave_Unity
 # 效果演示
 https://www.bilibili.com/video/BV1aYUAYZEDf/?spm_id_from=333.999.0.0&vd_source=6c0e4eb0f873cba039bd8cdba64cbbed
+![image](https://github.com/user-attachments/assets/1f3d426f-8ba4-40aa-82e5-1a25695d8887)
