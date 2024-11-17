@@ -1,7 +1,9 @@
 using System;
 using System.Threading;
 using Unity.Mathematics;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -332,6 +334,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
 
 
     }
+#if UNITY_EDITOR
     [CustomPropertyDrawer(typeof(Setting))]
     public class SettingDrawer : PropertyDrawer
     {
@@ -422,6 +425,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
         }
 
     }
+#endif
     /// <inheritdoc/>
     public override void Create()
     {
