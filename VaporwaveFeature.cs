@@ -95,6 +95,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
         public Material yuv2rgb;
         public Material graphNoise;
         public Material EvLED;
+        public Material FishEye;
         public float2 texSize;
         public VaporwaverPass(Setting setting)
         {
@@ -116,7 +117,8 @@ public class VaporwaveFeature : ScriptableRendererFeature
             yuv2rgb = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/YUV2RGB"));
             graphNoise = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/GraphNoise"));
             EvLED = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/EvLED"));
-            
+            FishEye= CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/FishEye"));
+
             var desc = renderingData.cameraData.cameraTargetDescriptor;
             RenderTextureDescriptor temRTDescriptor;
             texSize = new float2(desc.width, desc.height);
@@ -219,7 +221,10 @@ public class VaporwaveFeature : ScriptableRendererFeature
                 {
                     LEDEffect(cmd);
                 }
-
+                if (setting.FishEyeEnable)
+                {
+                    FishEyeEffect(cmd);
+                }
                 //---------------------------------------
                 if (pingpong)
                 {
@@ -299,7 +304,13 @@ public class VaporwaveFeature : ScriptableRendererFeature
             cmd.Blit(GetSourceRT(), GetTargetRT(), EvLED);
             SwapRT();
         }
-
+        public void FishEyeEffect(CommandBuffer cmd)
+        {
+            cmd.SetGlobalVector("_FishEyeIntensity", new Vector4(setting.FishEyeIntensity_X, setting.FishEyeIntensity_Y, 0, 0));
+            cmd.SetGlobalFloat("_FishEyePow", setting.FishEyePow);
+            cmd.Blit(GetSourceRT(), GetTargetRT(), FishEye);
+            SwapRT();
+        }
         public void Convolute(CommandBuffer cmd)
         {
             cmd.SetGlobalMatrix("_ConvoluteCore", ConvolutionKernels.GetConvolutionKernel(setting.convoluteType));
@@ -344,6 +355,12 @@ public class VaporwaveFeature : ScriptableRendererFeature
 
         public bool LEDResolutionEnable = false;
         public int LEDResolutionLevel = 1;
+
+        public bool FishEyeEnable = false;
+        public float FishEyeIntensity_X = 1f;
+        public float FishEyeIntensity_Y = 1f;
+        public float FishEyePow = 1;
+
         public bool emphasizeLines = true;
 
         public ConvolutionKernels.KernelType convoluteType = ConvolutionKernels.KernelType.RightTilt;
@@ -429,11 +446,26 @@ public class VaporwaveFeature : ScriptableRendererFeature
             EditorGUILayout.LabelField("LED 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty LEDResolutionEnable = property.FindPropertyRelative("LEDResolutionEnable");
-            EditorGUILayout.PropertyField(LEDResolutionEnable, new GUIContent("启 用 LED 设 置"));
+            EditorGUILayout.PropertyField(LEDResolutionEnable, new GUIContent("LED 启 用"));
             SerializedProperty LEDResolutionLevel = property.FindPropertyRelative("LEDResolutionLevel");
             LEDResolutionLevel.intValue = EditorGUILayout.IntSlider(new GUIContent("LED 分 辨 率 缩 减"), LEDResolutionLevel.intValue, 0,10 );
             EditorGUILayout.EndVertical();
 
+            EditorGUILayout.LabelField("鱼 眼 设 置", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
+            SerializedProperty FishEyeEnable = property.FindPropertyRelative("FishEyeEnable");
+            EditorGUILayout.PropertyField(FishEyeEnable, new GUIContent("启 用 鱼 眼"));
+            SerializedProperty FishEyeIntensity_X = property.FindPropertyRelative("FishEyeIntensity_X");
+            FishEyeIntensity_X.floatValue = EditorGUILayout.Slider(new GUIContent("鱼 眼 横 向 强 度"), FishEyeIntensity_X.floatValue, 0, 1);
+            SerializedProperty FishEyeIntensity_Y = property.FindPropertyRelative("FishEyeIntensity_Y");
+            FishEyeIntensity_Y.floatValue = EditorGUILayout.Slider(new GUIContent("鱼 眼 纵 向 强 度"), FishEyeIntensity_Y.floatValue, 0, 1);
+
+            SerializedProperty FishEyePow = property.FindPropertyRelative("FishEyePow");
+            FishEyePow.floatValue = EditorGUILayout.Slider(new GUIContent("鱼 眼 曲 率"), FishEyePow.floatValue, 0, 10);
+
+            EditorGUILayout.EndVertical();
+
+            
             EditorGUILayout.LabelField("其 他 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty emphasizeLines = property.FindPropertyRelative("emphasizeLines");
