@@ -94,6 +94,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
         public Material rgb2yuv;
         public Material yuv2rgb;
         public Material graphNoise;
+        public Material EvLED;
         public float2 texSize;
         public VaporwaverPass(Setting setting)
         {
@@ -114,6 +115,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
             rgb2yuv = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/RGB2YUV"));
             yuv2rgb = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/YUV2RGB"));
             graphNoise = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/GraphNoise"));
+            EvLED = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/EvLED"));
             
             var desc = renderingData.cameraData.cameraTargetDescriptor;
             RenderTextureDescriptor temRTDescriptor;
@@ -212,7 +214,12 @@ public class VaporwaveFeature : ScriptableRendererFeature
                 {
                     QualitySetting(cmd);
                 }
-                
+
+                if (setting.LEDResolutionEnable)
+                {
+                    LEDEffect(cmd);
+                }
+
                 //---------------------------------------
                 if (pingpong)
                 {
@@ -285,6 +292,14 @@ public class VaporwaveFeature : ScriptableRendererFeature
             cmd.Blit(GetSourceRT(), GetTargetRT(), snowMat);
             SwapRT();
         }
+
+        public void LEDEffect(CommandBuffer cmd)
+        {
+            cmd.SetGlobalFloat("_LEDResolutionLevel",setting.LEDResolutionLevel);
+            cmd.Blit(GetSourceRT(), GetTargetRT(), EvLED);
+            SwapRT();
+        }
+
         public void Convolute(CommandBuffer cmd)
         {
             cmd.SetGlobalMatrix("_ConvoluteCore", ConvolutionKernels.GetConvolutionKernel(setting.convoluteType));
@@ -326,6 +341,9 @@ public class VaporwaveFeature : ScriptableRendererFeature
         public bool qualityEnable = true;
         public float darkNoise = 5;
         public float lightNoise = 0;
+
+        public bool LEDResolutionEnable = false;
+        public int LEDResolutionLevel = 1;
         public bool emphasizeLines = true;
 
         public ConvolutionKernels.KernelType convoluteType = ConvolutionKernels.KernelType.RightTilt;
@@ -406,6 +424,14 @@ public class VaporwaveFeature : ScriptableRendererFeature
             lightNoise.floatValue = EditorGUILayout.Slider(new GUIContent("信 号 噪 声"), lightNoise.floatValue, 0f, 500f);
             SerializedProperty darkNoise = property.FindPropertyRelative("darkNoise");
             darkNoise.floatValue = EditorGUILayout.Slider(new GUIContent("胶 片 颗 粒"), darkNoise.floatValue, 0f, 500f);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.LabelField("LED 设 置", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
+            SerializedProperty LEDResolutionEnable = property.FindPropertyRelative("LEDResolutionEnable");
+            EditorGUILayout.PropertyField(LEDResolutionEnable, new GUIContent("启 用 LED 设 置"));
+            SerializedProperty LEDResolutionLevel = property.FindPropertyRelative("LEDResolutionLevel");
+            LEDResolutionLevel.intValue = EditorGUILayout.IntSlider(new GUIContent("LED 分 辨 率 缩 减"), LEDResolutionLevel.intValue, 0,10 );
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.LabelField("其 他 设 置", EditorStyles.boldLabel);
