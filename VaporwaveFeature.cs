@@ -203,6 +203,10 @@ public class VaporwaveFeature : ScriptableRendererFeature
                     {
                         InvertLightEffect(cmd);
                     }
+                    if (setting.FishEyeEnable)
+                    {
+                        FishEyeEffect(cmd);
+                    }
                     if (setting.interlacedEnable)
                     {
                         InterlacedEffect(cmd);
@@ -221,10 +225,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
                 {
                     LEDEffect(cmd);
                 }
-                if (setting.FishEyeEnable)
-                {
-                    FishEyeEffect(cmd);
-                }
+
                 //---------------------------------------
                 if (pingpong)
                 {
