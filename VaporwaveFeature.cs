@@ -100,11 +100,6 @@ public class VaporwaveFeature : ScriptableRendererFeature
         public VaporwaverPass(Setting setting)
         {
             this.setting = setting;
-        }
-        public Setting setting;
-        public bool invert;
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
-        {
             convoluteMat = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/Convolute"));
             blitMat = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/BlitGraph"));
             blitMatInvert = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/BlitGraphInvert"));
@@ -117,7 +112,13 @@ public class VaporwaveFeature : ScriptableRendererFeature
             yuv2rgb = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/YUV2RGB"));
             graphNoise = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/GraphNoise"));
             EvLED = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/EvLED"));
-            FishEye= CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/FishEye"));
+            FishEye = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/FishEye"));
+        }
+        public Setting setting;
+        public bool invert;
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+
 
             var desc = renderingData.cameraData.cameraTargetDescriptor;
             RenderTextureDescriptor temRTDescriptor;
