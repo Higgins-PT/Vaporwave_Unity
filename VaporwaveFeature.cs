@@ -96,6 +96,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
         public Material graphNoise;
         public Material EvLED;
         public Material FishEye;
+        public Material WaterMark;
         public float2 texSize;
         public VaporwaverPass(Setting setting)
         {
@@ -113,6 +114,8 @@ public class VaporwaveFeature : ScriptableRendererFeature
             graphNoise = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/GraphNoise"));
             EvLED = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/EvLED"));
             FishEye = CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/FishEye"));
+            WaterMark= CoreUtils.CreateEngineMaterial(Shader.Find("Vaporwave/WaterMark"));
+
         }
         public Setting setting;
         public bool invert;
@@ -190,6 +193,10 @@ public class VaporwaveFeature : ScriptableRendererFeature
                 {
                     Convolute(cmd);
                 }
+                if (setting.WaterMarkEnable && setting.MarkTexture!= null)
+                {
+                    WaterMarkEffect(cmd, cameraTarget);
+                }
                 if (setting.snowEffect)
                 {
                     SnowEffect(cmd);
@@ -242,6 +249,48 @@ public class VaporwaveFeature : ScriptableRendererFeature
                 CommandBufferPool.Release(cmd);
             }
         }
+        #region Vector运算
+        public static (Vector2 a, Vector2 b) Vec4ToVec2(Vector4 vector4)
+        {
+            return (new Vector2(vector4.x, vector4.y), new Vector2(vector4.z, vector4.w));
+        }
+        public static Vector4 Vec2ToVec4(Vector2 a, Vector2 b)
+        {
+            return new Vector4(a.x, a.y, b.x, b.y);
+        }
+        public static Vector4 Multiply(Vector4 a, Vector4 b)
+        {
+            return new Vector4(
+                a.x * b.x,
+                a.y * b.y,
+                a.z * b.z,
+                a.w * b.w
+            );
+        }
+        public static Vector4 Divide(Vector4 a, Vector4 b)
+        {
+            return new Vector4(
+                b.x != 0 ? a.x / b.x : 0,
+                b.y != 0 ? a.y / b.y : 0,
+                b.z != 0 ? a.z / b.z : 0,
+                b.w != 0 ? a.w / b.w : 0
+            );
+        }
+        public static Vector2 Multiply(Vector2 a, Vector2 b)
+        {
+            return new Vector2(
+                a.x * b.x,
+                a.y * b.y
+            );
+        }
+        public static Vector2 Divide(Vector2 a, Vector2 b)
+        {
+            return new Vector2(
+                b.x != 0 ? a.x / b.x : 0,
+                b.y != 0 ? a.y / b.y : 0
+            );
+        }
+        #endregion
         public void QualitySetting(CommandBuffer cmd)
         {
             cmd.SetGlobalFloat("_DrakNoise", setting.darkNoise / 255f);
@@ -313,6 +362,19 @@ public class VaporwaveFeature : ScriptableRendererFeature
             cmd.Blit(GetSourceRT(), GetTargetRT(), FishEye);
             SwapRT();
         }
+
+        public void WaterMarkEffect(CommandBuffer cmd, RTHandle rt)
+        {
+            Vector2 size = Divide(new Vector2(setting.MarkTexture.width, setting.MarkTexture.height), new Vector2(rt.rt.width, rt.rt.height));
+            var rect = Vec4ToVec2(setting.MarkTextureRect);
+            size = Multiply(rect.b, size);
+            cmd.SetGlobalVector("_MarkTextureRect", Vec2ToVec4(rect.a - size / 2f, size));
+            cmd.SetGlobalFloat("_MarkTextureAlpha", setting.MarkTextureAlpha);
+            cmd.SetGlobalTexture("_MarkTexture", setting.MarkTexture);
+
+            cmd.Blit(GetSourceRT(), GetTargetRT(), WaterMark);
+            SwapRT();
+        }
         public void Convolute(CommandBuffer cmd)
         {
             cmd.SetGlobalMatrix("_ConvoluteCore", ConvolutionKernels.GetConvolutionKernel(setting.convoluteType));
@@ -363,6 +425,13 @@ public class VaporwaveFeature : ScriptableRendererFeature
         public float FishEyeIntensity_Y = 1f;
         public float FishEyePow = 1;
 
+        public bool WaterMarkEnable = false;
+        public Vector4 MarkTextureRect = new Vector4(0.5f, 0.5f, 1f, 1f);
+        public float MarkTextureAlpha = 1;
+        public Texture2D MarkTexture;
+        public GameObject MarkTextPrefab;
+        public string MarkTextFiled;
+
         public bool emphasizeLines = true;
 
         public ConvolutionKernels.KernelType convoluteType = ConvolutionKernels.KernelType.RightTilt;
@@ -371,13 +440,22 @@ public class VaporwaveFeature : ScriptableRendererFeature
 
 
     }
+
 #if UNITY_EDITOR
     [CustomPropertyDrawer(typeof(Setting))]
     public class SettingDrawer : PropertyDrawer
     {
+        public static (Vector2 a, Vector2 b) Vec4ToVec2(Vector4 vector4)
+        {
+            return (new Vector2(vector4.x, vector4.y), new Vector2(vector4.z, vector4.w));
+        }
+        public static Vector4 Vec2ToVec4(Vector2 a, Vector2 b)
+        {
+            return new Vector4(a.x, a.y, b.x, b.y);
+        }
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-
+            #region 基础设置
             EditorGUI.BeginProperty(position, label, property);
             EditorGUILayout.LabelField("基 础 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
@@ -392,7 +470,9 @@ public class VaporwaveFeature : ScriptableRendererFeature
             SerializedProperty brightFade = property.FindPropertyRelative("brightFade");
             brightFade.floatValue = EditorGUILayout.Slider(new GUIContent("亮 部 褪 色"), brightFade.floatValue, 0f, 128f);
             EditorGUILayout.EndVertical();
+            #endregion
 
+            #region 颜色设置
             EditorGUILayout.LabelField("颜 色 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty vividU = property.FindPropertyRelative("vividU");
@@ -406,9 +486,9 @@ public class VaporwaveFeature : ScriptableRendererFeature
             SerializedProperty level = property.FindPropertyRelative("level");
             level.floatValue = EditorGUILayout.Slider(new GUIContent("色 彩 断 层"), level.floatValue, 1f, 255f);
             EditorGUILayout.EndVertical();
+            #endregion
 
-
-
+            #region 效果设置
             EditorGUILayout.LabelField("效 果 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty shiftX = property.FindPropertyRelative("shiftX");
@@ -434,7 +514,9 @@ public class VaporwaveFeature : ScriptableRendererFeature
             SerializedProperty transposeNoise = property.FindPropertyRelative("transposeNoise");
             transposeNoise.floatValue = EditorGUILayout.Slider(new GUIContent("横 向 漂 移 杂 质"), transposeNoise.floatValue, 0f, 2f);
             EditorGUILayout.EndVertical();
+            #endregion
 
+            #region 质量设置
             EditorGUILayout.LabelField("质 量 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty qualityEnable = property.FindPropertyRelative("qualityEnable");
@@ -444,7 +526,9 @@ public class VaporwaveFeature : ScriptableRendererFeature
             SerializedProperty darkNoise = property.FindPropertyRelative("darkNoise");
             darkNoise.floatValue = EditorGUILayout.Slider(new GUIContent("胶 片 颗 粒"), darkNoise.floatValue, 0f, 500f);
             EditorGUILayout.EndVertical();
+            #endregion
 
+            #region LED设置
             EditorGUILayout.LabelField("LED 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty LEDResolutionEnable = property.FindPropertyRelative("LEDResolutionEnable");
@@ -452,7 +536,9 @@ public class VaporwaveFeature : ScriptableRendererFeature
             SerializedProperty LEDResolutionLevel = property.FindPropertyRelative("LEDResolutionLevel");
             LEDResolutionLevel.intValue = EditorGUILayout.IntSlider(new GUIContent("LED 分 辨 率 缩 减"), LEDResolutionLevel.intValue, 0,10 );
             EditorGUILayout.EndVertical();
+            #endregion
 
+            #region 鱼眼设置
             EditorGUILayout.LabelField("鱼 眼 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty FishEyeEnable = property.FindPropertyRelative("FishEyeEnable");
@@ -466,8 +552,34 @@ public class VaporwaveFeature : ScriptableRendererFeature
             FishEyePow.floatValue = EditorGUILayout.Slider(new GUIContent("鱼 眼 曲 率"), FishEyePow.floatValue, 0, 10);
 
             EditorGUILayout.EndVertical();
+            #endregion
 
+            #region 水印设置
+            EditorGUILayout.LabelField("水 印 设 置", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
+            SerializedProperty WaterMarkEnable = property.FindPropertyRelative("WaterMarkEnable");
+            EditorGUILayout.PropertyField(WaterMarkEnable, new GUIContent("启 用 水 印"));
+            SerializedProperty MarkTextureRect = property.FindPropertyRelative("MarkTextureRect");
+            var rect = Vec4ToVec2(MarkTextureRect.vector4Value);
+            rect.a = EditorGUILayout.Vector2Field(new GUIContent("水 印 偏 移"), rect.a);
+            rect.b = EditorGUILayout.Vector2Field(new GUIContent("水 印 缩 放"), rect.b);
+            MarkTextureRect.vector4Value = Vec2ToVec4(rect.a, rect.b);
+            SerializedProperty MarkTextureAlpha = property.FindPropertyRelative("MarkTextureAlpha");
+            MarkTextureAlpha.floatValue = EditorGUILayout.Slider(new GUIContent("水 印 透 明 度"), MarkTextureAlpha.floatValue, 0, 1);
             
+            SerializedProperty MarkTexture = property.FindPropertyRelative("MarkTexture");
+            MarkTexture.objectReferenceValue=EditorGUILayout.ObjectField(new GUIContent("水 印 贴 图"),MarkTexture.objectReferenceValue,typeof(Texture2D),allowSceneObjects:false);
+         /*   SerializedProperty MarkTextPrefab = property.FindPropertyRelative("MarkTextPrefab");
+            MarkTextPrefab.objectReferenceValue = EditorGUILayout.ObjectField(new GUIContent("水印贴图"), MarkTextPrefab.objectReferenceValue, typeof(GameObject), allowSceneObjects: false);
+            SerializedProperty MarkTextFiled = property.FindPropertyRelative("MarkTextFiled");
+            MarkTextFiled.stringValue = EditorGUILayout.TextField(new GUIContent("水印贴图"), MarkTextFiled.stringValue);
+*/
+            ;
+
+        EditorGUILayout.EndVertical();
+            #endregion
+
+            #region 其他设置
             EditorGUILayout.LabelField("其 他 设 置", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
             SerializedProperty emphasizeLines = property.FindPropertyRelative("emphasizeLines");
@@ -479,7 +591,7 @@ public class VaporwaveFeature : ScriptableRendererFeature
             SerializedProperty invertLight = property.FindPropertyRelative("invertLight");
             EditorGUILayout.PropertyField(invertLight, new GUIContent("颠 倒 黑 白"));
             EditorGUILayout.EndVertical();
-
+            #endregion
 
             EditorGUI.EndProperty();
         }
